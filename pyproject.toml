@@ -1,0 +1,19 @@
+[project]
+name = "drhm"
+version = "0.1.0"
+description = "Abhidhamma-grounded, event-driven neuromorphic cognitive agent"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "slow: long-running acceptance tests (e.g. the 24h Perturbation Test); deselect with -m 'not slow'",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
