@@ -92,3 +92,28 @@ CETANA_MOMENTUM_THRESHOLD: float = 0.1
 # vedanā tones. Values are normalised to [-1, +1]; pleasant/painful cut at ±0.3.
 VEDANA_PLEASANT_THRESHOLD: float = 0.3   # ≥ this → somanassa / sukha
 VEDANA_PAINFUL_THRESHOLD: float = -0.3  # ≤ this → domanassa / dukkha; between → upekkha
+
+# --- LIF neuron parameters (drhm/snn/neurons.py) ------------------------------
+# Leaky Integrate-and-Fire in discrete time (Euler, dt = 1 ms).
+# Voltage: mV. Current: nA. Resistance: MΩ. R_m * I_nA = mV (dimensionally consistent).
+LIF_TAU_M: float = 20.0        # membrane time constant (ms)
+LIF_V_REST: float = -65.0      # resting membrane potential (mV)
+LIF_V_THRESHOLD: float = -55.0 # spike threshold (mV; 10 mV gap → fires in ~6 ms at full drive)
+LIF_V_RESET: float = -65.0     # reset potential after a spike (mV)
+LIF_R_MEMBRANE: float = 10.0   # membrane resistance (MΩ)
+LIF_T_REFRACTORY: float = 2.0  # absolute refractory period (ms)
+LIF_DT: float = 1.0            # simulation time step (ms)
+
+# --- Bhavanga attractor (drhm/snn/bhavanga.py) --------------------------------
+# LIF population modelling the resting life-continuum. Sensory SpikeEvents inject
+# current; when the population firing rate in the calana window crosses the
+# threshold, bhavanga-upaccheda (moment 3) fires and the citta-vithi begins.
+BHAVANGA_N_NEURONS: int = 256       # size of the resting attractor population
+# Per-neuron drive: I_neuron = (sum_payload × GAIN) / N   [nA]
+BHAVANGA_INPUT_GAIN: float = 20.0
+BHAVANGA_NOISE_STD: float = 0.5    # background noise std per neuron (nA)
+# Fraction of neurons that must fire in the calana window to trigger arrest.
+BHAVANGA_PERTURB_THRESHOLD: float = 0.15
+# If no arrest within this many steps of first input, vibration times out and
+# bhavanga returns to FLOWING (insufficient perturbation decays away).
+BHAVANGA_CALANA_WINDOW: int = 10
