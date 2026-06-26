@@ -40,15 +40,20 @@ Reference: Bhikkhu Bodhi, *Comprehensive Manual* ch. 4; CLAUDE.md §8 M3, §10.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
 from drhm import config
-from drhm.citta.types import CittaType, CittaFunction, get
+from drhm.citta.types import CittaType, get
 from drhm.citta.vedana import VedanāType
 from drhm.sensory.events import ArammanaGrade, Modality, SpikeEvent
 from drhm.snn.bhavanga import Bhavanga, PerturbationEvent
-
+from drhm.snn.mano_dvara_vithi import (
+    CascadeResult,
+    ManoDeterminerFn,
+    run_cascade,
+    vedana_to_scalar,
+)
 
 # ── Public data types ─────────────────────────────────────────────────────────
 
@@ -79,6 +84,8 @@ class CittaVithiResult:
         javana_type: The CittaType that fired as javana, or None if early-exit.
         early_exit:  True iff the moment-8 gate dropped to bhavanga without javana.
         registered:  True iff tadārammaṇa fired (ATI_MAHANTA grade only).
+        javana_vedana: Vedanā of the javana phase (seeds the mind-door cascade
+                     momentum); None on early-exit.
     """
 
     trigger: PerturbationEvent
@@ -87,6 +94,7 @@ class CittaVithiResult:
     javana_type: CittaType | None
     early_exit: bool
     registered: bool
+    javana_vedana: VedanāType | None = None
 
     @property
     def moment_numbers(self) -> list[int]:
@@ -97,6 +105,20 @@ class CittaVithiResult:
     def javana_moments(self) -> list[MomentRecord]:
         """The 7 (or 0) javana moment records."""
         return [m for m in self.moments if m.phase == "MOMENT_JAVANA"]
+
+
+@dataclass
+class CognitionResult:
+    """One full waking cognition: a sense-door vithi + its mind-door cascade (M3.5).
+
+    Attributes:
+        sense:   The completed sense-door CittaVithiResult.
+        cascade: The mind-door cascade that followed, or None if the sense-door
+                 vithi early-exited at moment 8 (a dropped object is not ruminated).
+    """
+
+    sense: CittaVithiResult
+    cascade: CascadeResult | None
 
 
 @dataclass
@@ -229,6 +251,7 @@ class CittaVithi:
                 javana_type=None,
                 early_exit=True,
                 registered=False,
+                javana_vedana=None,
             )
 
         # ── Phase V: Impulsion — moments 9–15 (javana ×7) ────────────────────
@@ -254,7 +277,51 @@ class CittaVithi:
             javana_type=javana_ct,
             early_exit=False,
             registered=registered,
+            javana_vedana=det.vedana,
         )
+
+    # ------------------------------------------------------------------
+    # Vithi scheduler: sense-door vithi + mind-door cascade (M3.5)
+    # ------------------------------------------------------------------
+
+    def process_and_cascade(
+        self,
+        events: list[SpikeEvent],
+        grade: ArammanaGrade,
+        trigger: PerturbationEvent,
+        mano_determiner: ManoDeterminerFn | None = None,
+    ) -> CognitionResult:
+        """Run the sense-door vithi, then fire the mind-door cascade (CLAUDE.md §8 M3.5).
+
+        After a *full* sense-door vithi (one that reached javana), a cascade of
+        ≥ ``config.MANO_DVARA_CASCADE_MIN`` mind-door processes fires automatically
+        — the mechanism of recognition, naming, and meaning-making. The cascade's
+        starting momentum is seeded from the sense-door javana's vedanā: neutral
+        objects get the minimum three chains, emotionally charged objects ruminate
+        for many more.
+
+        A sense-door vithi that early-exited at moment 8 (PARITTA, dropped object)
+        produces no cascade — there is nothing apperceived to think further about.
+
+        Args:
+            events:          Triggering SpikeEvents.
+            grade:           ArammanaGrade from the attention front-end.
+            trigger:         PerturbationEvent from ``Bhavanga.on_arrest``.
+            mano_determiner: Optional moment-M selector for the cascade (M5/M6 hook).
+
+        Returns:
+            :class:`CognitionResult` pairing the sense-door vithi with its cascade.
+        """
+        sense = self.process(events, grade, trigger)
+        if sense.early_exit or sense.javana_vedana is None:
+            return CognitionResult(sense=sense, cascade=None)
+
+        cascade = run_cascade(
+            vedana_scalar=vedana_to_scalar(sense.javana_vedana),
+            grade=grade,
+            determiner=mano_determiner,
+        )
+        return CognitionResult(sense=sense, cascade=cascade)
 
     # ------------------------------------------------------------------
     # Convenience wiring

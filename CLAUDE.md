@@ -282,6 +282,8 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
 - *Acceptance:* **Idle-stability test** — with no input, membrane potentials decay to baseline and
   the network stays in the attractor; injected spikes raise potentials and, above threshold, exit
   bhavanga. No exit without sufficient input.
+- *Status:* **DONE.** Pure-numpy `LIFLayer` (ADR-SNN-001: Nengo/BindsNET rejected for footprint) +
+  `Bhavanga` 3-moment state machine (FLOWING→VIBRATING→ARRESTED). 37 passing tests in `tests/snn/`.
 
 **M2.5 · Citta taxonomy + cetasika symbolic layer (`drhm/citta/`)**
 - *Objective:* the deterministic, rule-governed backbone of every thought-moment — no floats.
@@ -309,6 +311,8 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
   early-exit on zero-surprise input (energy-proportionality path) — and ONLY at moment 8.
 - *Supporting tests:* transitions are pure/deterministic given (state, input); no skipped or
   reordered moments under fuzzed input.
+- *Status:* **DONE.** `CittaVithi` FSM; PARITTA→8, MAHANTA→15, ATI_MAHANTA→17; `DeterminerFn`
+  hook at moment 8 for Active Inference (M5). 39 passing tests in `tests/snn/test_citta_vithi.py`.
 
 **M3.5 · ManoDvaraVithi waking cascade + vithi scheduler (`mano_dvara_vithi.py`)**
 - *Objective:* after every sense-door vithi, a cascade of mind-door processes fires automatically —
@@ -322,6 +326,9 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
 - *Acceptance:* after a sense-door vithi, assert ≥ 3 mind-door chains fire with brief bhavanga
   between each; assert cascade stops when momentum drops below threshold; assert the same FSM
   runs from `replay.py` for sleep/dreaming.
+- *Status:* **DONE.** `ManoDvaraVithi` (one chain) + `run_cascade` (momentum-driven scheduler);
+  `CittaVithi.process_and_cascade` wires sense-door→cascade; `ManoDeterminerFn` is the M5/M6 hook;
+  neutral object → 3 chains, vivid charged object → more; early-exit → no cascade. 42 tests.
 
 ### Phase 3 — Semantic binding & active inference (`drhm/semantics/`, `drhm/inference/`)
 
