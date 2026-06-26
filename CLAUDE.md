@@ -61,10 +61,15 @@ Pali term; a short English gloss goes in the docstring.
 | sampaticchana         | `MOMENT_RECEIVING`             | Moment 6: receiving / spatiotemporal aggregation     |
 | santirana             | `MOMENT_INVESTIGATING`         | Moment 7: investigating / pattern matching           |
 | votthapana            | `MOMENT_DETERMINING`           | Moment 8: determining / **salience gate**            |
-| javana                | `MOMENT_JAVANA` (×7)           | Moments 9–15: impulsion / Active Inference loop      |
+| javana                | `MOMENT_JAVANA` (×7)           | Moments 9–15: impulsion — ONE citta-type fires 7 identical times |
 | tadarammana           | `MOMENT_REGISTERING` (×2)      | Moments 16–17: registration / plasticity commit      |
 | thina / middha        | `sloth` / `torpor`             | Sleep-pressure factors (trigger sleep mode)          |
-| manodvaravithi        | `ManoDvaraVithi`               | Mind-door process = dreaming / offline replay        |
+| manodvaravithi        | `ManoDvaraVithi`               | Mind-door process — waking cascade (recognition chain) AND dreaming/offline replay |
+| mano-dvaravajjana     | `MOMENT_MIND_DOOR_ADVERTING`   | ManoDvaraVithi moment M: mind-door adverting (analogous to votthapana for sense-door) |
+| cetasika (52 types)   | `Cetasika` enum                | Mental factor; 52 total in 5 groups (see `drhm/citta/cetasikas.py`) |
+| vedanā                | `VedanāType`                   | Hedonic valence of every citta: SOMANASSA / DOMANASSA / UPEKKHA / SUKHA / DUKKHA |
+| moral root            | `MoralRoot`                    | Ethical root of javana: LOBHA / DOSA / MOHA / ALOBHA / ADOSA / AMOHA |
+| citta type (89/121)   | `CittaType`                    | One of the 89/121 citta types from the Abhidhammattha Sangaha (`drhm/citta/types.py`) |
 
 Do **not** invent alternative spellings (e.g. `votthapanna`, `javanna`). Grep for the term before
 adding it.
@@ -95,10 +100,15 @@ drhm/
     frontend.py       #   AttentionFrontend: focus -> grade -> drop the futile
   recording/          # Phase 1.5 — session capture for later (M2-M6) consolidation
     session.py        #   SessionRecorder: graded spike stream -> local JSONL (opt-in, pausable)
+  citta/              # Phase 2 (M2.5) — symbolic citta/cetasika layer. NO floats here.
+    cetasikas.py      #   52 cetasikas as enum; universal sets; coexistence rules + validate_profile()
+    types.py          #   89/121 CittaType registry (Abhidhammattha Sangaha §§1-5)
+    vedana.py         #   VedanāType enum; categorise(float) -> VedanāType (bridge to Conceptual Space)
   snn/                # Phase 2 — spiking substrate
     neurons.py        #   LIF (and optional Izhikevich) neuron models
     bhavanga.py       #   resting attractor; perturbation detection (moments 1-3)
-    citta_vithi.py    #   the 17-moment deterministic state machine
+    citta_vithi.py    #   the 17-moment sense-door FSM; uses CittaType from drhm/citta/
+    mano_dvara_vithi.py  #   waking mind-door cascade + dreaming replay FSM (M3.5 / M6)
   semantics/          # Phase 3 — the unit "X"
     conceptual_space.py  # quality dimensions, convex regions, prototypes (Voronoi)
     vsa.py               # hypervectors: bind (⊗), bundle (⊕), permute (Π). D=10_000
@@ -163,8 +173,12 @@ These are enforced by review. Violating an invariant is a bug regardless of test
    gating sequence in order and return to `Bhavanga`. The salience gate at moment 8
    (`MOMENT_DETERMINING`) is the ONLY sanctioned early-exit: zero surprise → drop straight back to
    bhavanga (energy proportionality). Never skip moments silently elsewhere.
-4. **Javana is a fixed 7-step recurrent loop**, not a deep feedforward stack. Depth comes from
-   recurrence + conceptor algebra, not added layers.
+4. **Javana is ONE citta-type that fires 7 identical consecutive times**, not a 7-stage pipeline
+   with different operations at each step. Active Inference runs *once* at moment 8
+   (votthapana/`MOMENT_DETERMINING`) to select the javana `CittaType` based on object valence
+   (vedanā), anusaya (STDP weight space), and salience grade. That same type then repeats exactly
+   `config.JAVANA_COUNT` (= 7) times unchanged. Depth comes from the recurrent SNN dynamics and
+   conceptor algebra within each repetition, not from differentiated stages.
 5. **Learning is local and gradient-free in the running agent.** STDP/AGMP only. No
    backpropagation, no global loss, no offline epoch-based gradient training in the live cognitive
    path. (Pre-training auxiliary perception nets offline is acceptable only if clearly quarantined
@@ -269,16 +283,45 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
   the network stays in the attractor; injected spikes raise potentials and, above threshold, exit
   bhavanga. No exit without sufficient input.
 
+**M2.5 · Citta taxonomy + cetasika symbolic layer (`drhm/citta/`)**
+- *Objective:* the deterministic, rule-governed backbone of every thought-moment — no floats.
+- *Build:* `cetasikas.py` (52 `Cetasika` enum members; `UNIVERSALS`, `UNIVERSAL_UNWHOLESOME`,
+  `UNIVERSAL_BEAUTIFUL` sets; `validate_profile()` enforcing all coexistence rules);
+  `types.py` (89/121 `CittaType` registry from the Abhidhammattha Sangaha — each type carries
+  its cetasika profile, vedanā category, moral root, and function; profiles validated at import);
+  `vedana.py` (`VedanāType` enum; `categorise(float) → VedanāType` bridge from Conceptual Space).
+- *Status:* **DONE.** 54 passing tests in `tests/citta/`.
+- *Acceptance tests:* every CittaType has all 7 universals; lobha–dosa mutual exclusion holds;
+  beautiful–unwholesome universals never coexist; `validate_profile()` rejects any violation;
+  vedanā thresholds categorise correctly; 12 akusala + 16 sobhana javana types registered.
+
 **M3 · The 17-moment Citta-Vithi FSM (`citta_vithi.py`)**
 - *Objective:* the 17 discrete thought-moments as a deterministic automaton over the SNN.
-- *Build:* states for moments 1–17 (`MOMENT_*`), strict transitions, the moment-8 salience gate,
-  the 7× javana sub-loop, the 2× registration tail, then return to `Bhavanga`.
+- *Build:* states for moments 1–17 (`MOMENT_*`), strict transitions, the moment-8 salience gate.
+  **Javana implementation (corrected):** moment 8 (votthapana) selects ONE `CittaType` from the
+  registry via Active Inference; that type then fires exactly `config.JAVANA_COUNT` (= 7)
+  consecutive times — identical cittas, same cetasika profile, same moral root. This is NOT
+  a 7-stage pipeline; it is one type repeating 7 times. The 2× registration tail follows, then
+  return to `Bhavanga`.
 - ★ **Sequence Integrity Test (acceptance):** inject an artificial spike train; trace the
   cascade; assert it passes through **all 17 distinct gating phases in order** and returns to
-  bhavanga. Separately assert the moment-8 gate can early-exit on zero-surprise input
-  (energy-proportionality path) — and ONLY at moment 8.
+  bhavanga. Assert javana fires the same `CittaType` all 7 times. Assert moment-8 gate can
+  early-exit on zero-surprise input (energy-proportionality path) — and ONLY at moment 8.
 - *Supporting tests:* transitions are pure/deterministic given (state, input); no skipped or
   reordered moments under fuzzed input.
+
+**M3.5 · ManoDvaraVithi waking cascade + vithi scheduler (`mano_dvara_vithi.py`)**
+- *Objective:* after every sense-door vithi, a cascade of mind-door processes fires automatically —
+  the mechanism of recognition, naming, and meaning-making; also the overthinker's chaining.
+- *Build:* `ManoDvaraVithi` FSM with structure Bv-Ba-M-J×7-[D×2]-Bha (bhavanga-vibrating,
+  bhavanga-arrested, mano-dvaravajjana, 7 javana, optional tadarammana, bhavanga). Vithi
+  scheduler in `citta_vithi.py` fires ≥ `config.MANO_DVARA_CASCADE_MIN` (= 3) chains after
+  every sense-door vithi; continues while `cetanā_momentum > config.CETANA_MOMENTUM_THRESHOLD`.
+  Momentum = `vedanā_scalar × salience_grade`, decayed by `config.CETANA_MOMENTUM_DECAY` per
+  chain. This same FSM is reused by `drhm/sleep/replay.py` (M6) for dreaming.
+- *Acceptance:* after a sense-door vithi, assert ≥ 3 mind-door chains fire with brief bhavanga
+  between each; assert cascade stops when momentum drops below threshold; assert the same FSM
+  runs from `replay.py` for sleep/dreaming.
 
 ### Phase 3 — Semantic binding & active inference (`drhm/semantics/`, `drhm/inference/`)
 
@@ -294,11 +337,14 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
 - *Supporting tests:* convexity check (a point between two same-category instances is in-category);
   prototype recall; hypervector noise tolerance (random bit flips don't change nearest concept).
 
-**M5 · Volitional engine: Active Inference in Javana (`drhm/inference/`)**
-- *Objective:* moment-8 gating + the 7-step javana loop driven by free energy.
+**M5 · Volitional engine: Active Inference at votthapana + javana (`drhm/inference/`)**
+- *Objective:* moment-8 type-selection driven by free energy; 7 identical javana cittas emit action.
 - *Build:* `active_inference.py` (generative world model; variational free energy = surprise;
-  Expected Free Energy scoring policies = epistemic + pragmatic terms); `javana.py` wires EFE +
-  conceptor dynamics into the recurrent 7-moment impulsion loop and emits motor/vocal spikes.
+  Expected Free Energy scoring policies = epistemic + pragmatic value from vedanā);
+  `javana.py` — at moment 8, runs Active Inference *once* to select the javana `CittaType`
+  (based on X_t valence, anusaya from STDP weights, salience grade); the selected type then
+  fires 7 identical times, with conceptor dynamics applied per-repetition and motor/vocal
+  spikes emitted.
 - *Acceptance (extends Conceptor Logic Test):* novel stimulus combinations register as **high
   free energy / surprising**; familiar combinations as low. The moment-8 gate opens only on high
   EFE. Actions chosen reduce expected free energy in a toy environment (epistemic foraging
@@ -365,9 +411,12 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
 I.   Baseline      moments 1-3   → async event detection interrupts bhavanga
 II.  Apprehension  moments 4-5   → SNN feature extraction → Conceptual Space / image schema
 III. Assimilation  moments 6-7   → VSA bind/bundle into composite hypervector "X"
-IV.  Determination moment 8      → free-energy salience gate (early-exit if zero surprise)
-V.   Impulsion     moments 9-15  → 7-step Conceptor + Active-Inference javana loop
+IV.  Determination moment 8      → Active Inference selects javana CittaType (moral root,
+                                   vedanā, anusaya); early-exit if EFE ≈ 0 (zero surprise)
+V.   Impulsion     moments 9-15  → selected CittaType fires 7 identical times; Conceptor
+                                   dynamics per repetition; motor/vocal spikes emitted
 VI.  Consolidation moments 16-17 → STDP / ISI-CV metaplasticity commit; back to bhavanga
+     [then ManoDvaraVithi cascade: ≥3 mind-door chains for recognition/meaning-making]
 ```
 
 Energy proportionality comes from three compounding mechanisms (Transcendence §8): event-driven

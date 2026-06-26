@@ -74,3 +74,21 @@ PROPRIOCEPTION_HASH_KEYS: bool = True
 # --- Session recording (drhm/recording/) -------------------------------------
 RECORDING_DIR: str = "~/.drhm/sessions"  # expanduser at use; stays local
 RECORDING_FORMAT: str = "jsonl"
+
+# --- Citta-vithi & ManoDvaraVithi (drhm/snn/, drhm/citta/) -------------------
+# Javana always repeats exactly 7 times in normal waking cognition (Abhidhammattha
+# Sangaha §4). In jhana this extends; that exception is handled in drhm/snn/citta_vithi.py.
+JAVANA_COUNT: int = 7
+# Minimum mind-door (manodvara) chains that fire after every sense-door vithi.
+# The Abhidhamma describes at least 3 cascading processes (whole → form → name).
+MANO_DVARA_CASCADE_MIN: int = 3
+# Cetana momentum decays by this factor after each manodvaravithi chain. Cascade
+# continues while momentum > CETANA_MOMENTUM_THRESHOLD.
+CETANA_MOMENTUM_DECAY: float = 0.7
+CETANA_MOMENTUM_THRESHOLD: float = 0.1
+
+# --- Vedanā thresholds (drhm/citta/vedana.py) ---------------------------------
+# A continuous valence scalar from Conceptual Space is categorised into the three
+# vedanā tones. Values are normalised to [-1, +1]; pleasant/painful cut at ±0.3.
+VEDANA_PLEASANT_THRESHOLD: float = 0.3   # ≥ this → somanassa / sukha
+VEDANA_PAINFUL_THRESHOLD: float = -0.3  # ≤ this → domanassa / dukkha; between → upekkha
