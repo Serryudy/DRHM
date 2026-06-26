@@ -361,6 +361,10 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
   EFE. Actions chosen reduce expected free energy in a toy environment (epistemic foraging
   observable).
 - *Supporting tests:* EFE balances exploration vs exploitation; deterministic given seed.
+- *Status:* **DONE.** `GenerativeModel` (EMA belief, surprise = 1 − cosine(X_t, μ)); `JavanaDeterminer`
+  (EFE = pragmatic_cost − epistemic_gain; pañña types win on novel stimuli; upekkha-pañña beats dosa
+  for painful percepts — equanimous wisdom). `DeterminerInput.x_t: ndarray | None` added for M5 path;
+  `anusaya_bias` dict hook for M6 STDP. 43 passing tests in `tests/inference/`. Total suite: 352 tests.
 
 ### Phase 4 — Continuous ontogeny & sleep consolidation (`drhm/learning/`, `drhm/sleep/`)
 

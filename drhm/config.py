@@ -104,6 +104,18 @@ LIF_R_MEMBRANE: float = 10.0   # membrane resistance (MΩ)
 LIF_T_REFRACTORY: float = 2.0  # absolute refractory period (ms)
 LIF_DT: float = 1.0            # simulation time step (ms)
 
+# --- Active Inference / EFE (drhm/inference/) ---------------------------------
+# The generative model is an EMA over observed X_t hypervectors.
+# Surprise = 1 − cosine(X_t, μ) ∈ [0, 2]; 1.0 when no prior exists.
+GENERATIVE_MODEL_ETA: float = 0.1    # EMA step size: how fast beliefs update
+# MAHANTA-grade stimuli whose surprise falls below this threshold get an
+# early-exit at moment 8 (energy proportionality — familiar → no javana).
+# ATI_MAHANTA objects are exempt: they always proceed to registration.
+EFE_SURPRISE_GATE: float = 0.2
+# Scaling of epistemic (information-gain) value in EFE.  Higher → the agent
+# explores more; lower → it follows the pragmatic (valence) term more closely.
+EFE_EPISTEMIC_WEIGHT: float = 1.0
+
 # --- Semantics: VSA hypervectors + Conceptors (drhm/semantics/) ---------------
 # All concepts are encoded as bipolar {-1, +1} hypervectors of dimension VSA_D.
 # Dimensionality is 10 000 by default; smaller values are fine in tests.

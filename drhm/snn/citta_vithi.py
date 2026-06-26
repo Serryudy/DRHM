@@ -42,6 +42,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import numpy as np
 
 from drhm import config
 from drhm.citta.types import CittaType, get
@@ -128,13 +132,16 @@ class DeterminerInput:
     Attributes:
         grade:         ArammanaGrade of the sense object.
         events:        The triggering sensory SpikeEvents.
-        vedana_scalar: Continuous valence from Conceptual Space (Phase 3).
-                       Placeholder at M3 — always 0.0 until M4.
+        vedana_scalar: Continuous valence from Conceptual Space (M4+).
+                       Placeholder at M3 — 0.0 until M4 is wired into the agent.
+        x_t:           Encoded percept hypervector from encode_x() (M5+).
+                       None until the agent wires VSA into the citta-vithi path.
     """
 
     grade: ArammanaGrade
     events: list[SpikeEvent]
     vedana_scalar: float = 0.0
+    x_t: "np.ndarray | None" = None
 
 
 @dataclass
