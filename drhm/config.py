@@ -104,6 +104,14 @@ LIF_R_MEMBRANE: float = 10.0   # membrane resistance (MΩ)
 LIF_T_REFRACTORY: float = 2.0  # absolute refractory period (ms)
 LIF_DT: float = 1.0            # simulation time step (ms)
 
+# --- Semantics: VSA hypervectors + Conceptors (drhm/semantics/) ---------------
+# All concepts are encoded as bipolar {-1, +1} hypervectors of dimension VSA_D.
+# Dimensionality is 10 000 by default; smaller values are fine in tests.
+VSA_D: int = 10_000
+# Default aperture α for conceptors.  Small α → narrow (strict); large α → broad (relaxed).
+# α = 10 gives moderate coverage; tune per domain.
+CONCEPTOR_ALPHA: float = 10.0
+
 # --- Bhavanga attractor (drhm/snn/bhavanga.py) --------------------------------
 # LIF population modelling the resting life-continuum. Sensory SpikeEvents inject
 # current; when the population firing rate in the calana window crosses the

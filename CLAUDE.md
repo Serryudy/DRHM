@@ -343,6 +343,10 @@ the Abhidhamma account of attention (sources: abhidhamma.com, verified).
   conceptor Boolean ops behave (intersection/union/complement) and singular values ∈ [0,1].
 - *Supporting tests:* convexity check (a point between two same-category instances is in-category);
   prototype recall; hypervector noise tolerance (random bit flips don't change nearest concept).
+- *Status:* **DONE.** Pure-numpy VSA (ADR-VSA-001: torchhd rejected for footprint) + eigendecomposition
+  Conceptors; Boolean AND/OR/NOT; `ConceptualSpace` with Voronoi prototypes; `encode_x()` for the
+  unit X formula. Note: C ∧ ¬C max SV = 1/3 (not 0) — the Jaeger formula's theoretical bound for
+  finite aperture. 80 passing tests in `tests/semantics/`. Total suite: 309 tests.
 
 **M5 · Volitional engine: Active Inference at votthapana + javana (`drhm/inference/`)**
 - *Objective:* moment-8 type-selection driven by free energy; 7 identical javana cittas emit action.
